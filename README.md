@@ -38,9 +38,14 @@ The application features three main tabs:
 
 ### Windows (Standalone Executable)
 
-1. Download `JadwalSholat-v1.0.0-windows.zip` from the [Releases page](https://github.com/fikrisyahid/adzanid/releases)
-2. Extract the ZIP file
-3. Run `Jadwal Sholat.exe`
+1. Download and extract `Adzanid-Windows-v1.0.0.zip`
+2. **Windows SmartScreen Warning**: You may see a security warning
+   - Click "More info"
+   - Click "Run anyway"
+   - This happens because the app isn't digitally signed (requires expensive certificate)
+   - The app is safe - you can verify the source code on GitHub
+
+3. Run `Adzanid.exe`
 
 No Python installation required!
 
