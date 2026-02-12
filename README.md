@@ -183,6 +183,43 @@ cp -r assets dist/Adzanid/
 The executable will be in the `dist/Adzanid/` directory.
 
 
+## Uninstallation
+
+### Windows
+
+Simply delete the extracted `Adzanid` folder. If you enabled "Run at Startup", the app will automatically remove the startup entry when you close it.
+
+### macOS / Linux
+
+Uninstall Adzanid with a single command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/uninstall.sh | sudo bash
+```
+
+**Or using wget:**
+```bash
+wget -qO- https://raw.githubusercontent.com/fikrisyahid/adzanid/main/uninstall.sh | sudo bash
+```
+
+**Or from cloned repository:**
+```bash
+cd adzanid
+chmod +x uninstall.sh
+sudo ./uninstall.sh
+```
+
+**What the uninstallation removes:**
+- ✅ Application files from `/opt/adzanid` (Linux) or `/Applications/Adzanid.app` (macOS)
+- ✅ Command-line launcher from `/usr/local/bin/adzanid`
+- ✅ Desktop entry (Linux only)
+- ✅ User autostart entries (if enabled)
+
+**User settings are preserved** and can be manually deleted if desired:
+- **Linux**: `~/.config/Adzanid/`
+- **macOS**: `~/Library/Application Support/Adzanid/` and `~/Library/Preferences/com.fikrisyahid.adzanid.plist`
+
+
 ## Usage
 
 ### Running the Application

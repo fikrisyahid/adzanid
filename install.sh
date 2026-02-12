@@ -53,18 +53,34 @@ detect_os() {
 check_python() {
     print_info "Checking for Python installation..."
     
-    if command -v python3 &> /dev/null; then
-        PYTHON_CMD="python3"
-    elif command -v python &> /dev/null; then
-        PYTHON_CMD="python"
+    # Prioritize conda/virtual environment Python if active
+    if [ -n "$CONDA_DEFAULT_ENV" ] || [ -n "$VIRTUAL_ENV" ]; then
+        print_info "Detected active Python environment: ${CONDA_DEFAULT_ENV:-$VIRTUAL_ENV}"
+        # Check 'python' command first (common in conda envs)
+        if command -v python &> /dev/null; then
+            PYTHON_CMD="python"
+        elif command -v python3 &> /dev/null; then
+            PYTHON_CMD="python3"
+        else
+            print_error "Python is not found in the current environment"
+            exit 1
+        fi
     else
-        print_error "Python is not installed on your system"
-        print_info "Please install Python 3.10 or higher (but less than 3.13)"
-        print_info "Visit: https://www.python.org/downloads/"
-        exit 1
+        # No active environment, check system Python
+        if command -v python3 &> /dev/null; then
+            PYTHON_CMD="python3"
+        elif command -v python &> /dev/null; then
+            PYTHON_CMD="python"
+        else
+            print_error "Python is not installed on your system"
+            print_info "Please install Python 3.10 or higher (but less than 3.13)"
+            print_info "Visit: https://www.python.org/downloads/"
+            exit 1
+        fi
     fi
     
     print_success "Python found: $PYTHON_CMD"
+    print_info "Python location: $(which $PYTHON_CMD)"
 }
 
 # Validate Python version
@@ -350,9 +366,16 @@ install_linux() {
     # Make executable
     chmod +x "$INSTALL_DIR/Adzanid"
     
-    # Create symbolic link in /usr/local/bin
-    print_info "Creating symbolic link in /usr/local/bin..."
-    ln -sf "$INSTALL_DIR/Adzanid" /usr/local/bin/adzanid
+    # Create wrapper script in /usr/local/bin (instead of symlink to fix asset paths)
+    print_info "Creating launcher script in /usr/local/bin..."
+    cat > /usr/local/bin/adzanid << 'EOF'
+#!/bin/bash
+# Adzanid launcher wrapper
+# This ensures the app runs from its installation directory to correctly resolve asset paths
+cd /opt/adzanid
+exec ./Adzanid "$@"
+EOF
+    chmod +x /usr/local/bin/adzanid
     
     # Create desktop entry
     print_info "Creating desktop entry..."
@@ -453,9 +476,16 @@ EOF
     # Set ownership
     chown -R root:wheel "$INSTALL_DIR"
     
-    # Create command-line alias
-    print_info "Creating command-line alias..."
-    ln -sf "$INSTALL_DIR/Contents/MacOS/Adzanid" /usr/local/bin/adzanid
+    # Create wrapper script for command-line access (instead of symlink to fix asset paths)
+    print_info "Creating launcher script in /usr/local/bin..."
+    cat > /usr/local/bin/adzanid << 'EOF'
+#!/bin/bash
+# Adzanid launcher wrapper for macOS
+# This ensures the app runs from its bundle directory to correctly resolve asset paths
+cd "/Applications/Adzanid.app/Contents/MacOS"
+exec ./Adzanid "$@"
+EOF
+    chmod +x /usr/local/bin/adzanid
     
     print_success "Adzanid installed successfully!"
     print_info "You can now find Adzanid in your Applications folder or run 'adzanid' from the terminal"
