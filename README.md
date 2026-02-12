@@ -38,7 +38,7 @@ The application features three main tabs:
 
 ### Windows (Standalone Executable)
 
-1. Download and extract `Adzanid-Windows-v1.0.0.zip`
+1. Download and extract [Adzanid-Windows-v1.0.0.zip](https://github.com/fikrisyahid/adzanid/releases/download/v1.0.0/Adzanid-Windows-v1.0.0.zip)
 2. **Windows SmartScreen Warning**: You may see a security warning
    - Click "More info"
    - Click "Run anyway"
