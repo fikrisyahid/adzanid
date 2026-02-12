@@ -80,7 +80,7 @@ If you want to create your own executable:
 pip install pyinstaller
 pyinstaller --name "Adzanid" --windowed --icon=assets/icon.png --add-data "assets:assets" main.py
 ```
-
+> [!NOTE]
 > Copy the `assets` folder into the `dist/Adzanid` directory.
 
 The executable will be in the `dist/` directory.
