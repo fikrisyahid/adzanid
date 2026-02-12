@@ -36,12 +36,43 @@ check_root() {
     if [ "$EUID" -ne 0 ]; then
         print_error "This installation requires root privileges"
         echo ""
-        print_info "Please run with sudo:"
-        print_info "  curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/quick-install.sh | sudo bash"
+        print_info "Please run with sudo -E to preserve environment variables:"
+        print_info "  curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/quick-install.sh | sudo -E bash"
         echo ""
         print_info "Or with wget:"
-        print_info "  wget -qO- https://raw.githubusercontent.com/fikrisyahid/adzanid/main/quick-install.sh | sudo bash"
+        print_info "  wget -qO- https://raw.githubusercontent.com/fikrisyahid/adzanid/main/quick-install.sh | sudo -E bash"
+        echo ""
+        print_warning "The -E flag is important if you're using conda/virtualenv"
         exit 1
+    fi
+}
+
+# Check if running under sudo without preserved environment
+check_sudo_environment() {
+    # If we're root and SUDO_USER is set, we're under sudo
+    if [ "$EUID" -eq 0 ] && [ -n "$SUDO_USER" ]; then
+        # Check if conda or virtualenv might be available for the original user
+        local user_home=$(eval echo ~$SUDO_USER)
+        
+        # Check if conda is installed for the user
+        if [ -f "$user_home/.conda/environments.txt" ] || [ -d "$user_home/miniconda3" ] || [ -d "$user_home/anaconda3" ] || [ -f "$user_home/.condarc" ]; then
+            # Conda is installed but environment vars are not preserved
+            if [ -z "$CONDA_DEFAULT_ENV" ] && [ -z "$CONDA_PREFIX" ]; then
+                print_error "Conda detected but environment not preserved under sudo"
+                print_info "You have conda installed, but environment variables are not preserved."
+                echo ""
+                print_info "Please re-run with -E flag to preserve your conda environment:"
+                echo ""
+                print_info "  Using curl:"
+                print_info "    curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/quick-install.sh | sudo -E bash"
+                echo ""
+                print_info "  Using wget:"
+                print_info "    wget -qO- https://raw.githubusercontent.com/fikrisyahid/adzanid/main/quick-install.sh | sudo -E bash"
+                echo ""
+                print_warning "The -E flag preserves your active conda environment (e.g., Python 3.12)"
+                exit 1
+            fi
+        fi
     fi
 }
 
@@ -71,6 +102,7 @@ main() {
     
     # Check prerequisites
     check_root
+    check_sudo_environment
     check_git
     
     # Create temporary directory

@@ -49,13 +49,40 @@ detect_os() {
     fi
 }
 
+# Check if running under sudo without preserved environment
+check_sudo_environment() {
+    # If we're root and SUDO_USER is set, we're under sudo
+    if [ "$EUID" -eq 0 ] && [ -n "$SUDO_USER" ]; then
+        # Check if conda or virtualenv might be available for the original user
+        local user_home=$(eval echo ~$SUDO_USER)
+        
+        # Check if conda is installed for the user
+        if [ -f "$user_home/.conda/environments.txt" ] || [ -d "$user_home/miniconda3" ] || [ -d "$user_home/anaconda3" ] || [ -f "$user_home/.condarc" ]; then
+            # Conda is installed but environment vars are not preserved
+            if [ -z "$CONDA_DEFAULT_ENV" ] && [ -z "$CONDA_PREFIX" ]; then
+                print_error "Conda environment detected but not preserved under sudo"
+                print_info "You are running with sudo, but conda environment variables are not preserved."
+                print_info ""
+                print_info "Please use one of these options:"
+                print_info "  1. Run with preserved environment: sudo -E ./install.sh"
+                print_info "  2. Activate conda in root shell: sudo -s, then conda activate <env>, then ./install.sh"
+                print_info ""
+                print_warning "Using 'sudo -E' is recommended to preserve your conda environment"
+                exit 1
+            fi
+        fi
+    fi
+}
+
 # Check if Python is installed
 check_python() {
     print_info "Checking for Python installation..."
     
     # Prioritize conda/virtual environment Python if active
-    if [ -n "$CONDA_DEFAULT_ENV" ] || [ -n "$VIRTUAL_ENV" ]; then
-        print_info "Detected active Python environment: ${CONDA_DEFAULT_ENV:-$VIRTUAL_ENV}"
+    if [ -n "$CONDA_DEFAULT_ENV" ] || [ -n "$VIRTUAL_ENV" ] || [ -n "$CONDA_PREFIX" ]; then
+        ENV_NAME="${CONDA_DEFAULT_ENV:-${VIRTUAL_ENV:-$CONDA_PREFIX}}"
+        print_info "Detected active Python environment: $ENV_NAME"
+        
         # Check 'python' command first (common in conda envs)
         if command -v python &> /dev/null; then
             PYTHON_CMD="python"
@@ -63,6 +90,8 @@ check_python() {
             PYTHON_CMD="python3"
         else
             print_error "Python is not found in the current environment"
+            print_info "Current environment: $ENV_NAME"
+            print_info "This might happen if conda environment is not properly activated"
             exit 1
         fi
     else
@@ -517,6 +546,9 @@ main() {
         print_error "Please run: sudo ./install.sh"
         exit 1
     fi
+    
+    # Check for sudo environment issues
+    check_sudo_environment
     
     # Check Python
     check_python

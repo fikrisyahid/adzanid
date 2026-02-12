@@ -104,13 +104,16 @@ Install Adzanid with a single command:
 
 **Using curl:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/quick-install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/quick-install.sh | sudo -E bash
 ```
 
 **Or using wget:**
 ```bash
-wget -qO- https://raw.githubusercontent.com/fikrisyahid/adzanid/main/quick-install.sh | sudo bash
+wget -qO- https://raw.githubusercontent.com/fikrisyahid/adzanid/main/quick-install.sh | sudo -E bash
 ```
+
+> [!TIP]
+> If you're using conda or a virtual environment, the `-E` flag is **required** to preserve your Python environment. Without it, the script may not detect your Python 3.12 installation.
 
 **What the installation does:**
 - ✅ Validates Python installation and version
@@ -138,9 +141,12 @@ cd adzanid
 # Make the install script executable
 chmod +x install.sh
 
-# Run the installation script with sudo
-sudo ./install.sh
+# Run the installation script with sudo -E (to preserve conda environment if active)
+sudo -E ./install.sh
 ```
+
+> [!TIP]
+> The `-E` flag preserves environment variables. This is important if you're using conda or a virtual environment.
 
 #### Alternative: Run from Source (Without Installation)
 
