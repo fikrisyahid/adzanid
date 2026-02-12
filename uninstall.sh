@@ -5,6 +5,12 @@
 
 set -e  # Exit on any error
 
+# Check for --yes flag
+SKIP_CONFIRMATION=false
+if [ "$1" = "--yes" ] || [ "$1" = "-y" ]; then
+    SKIP_CONFIRMATION=true
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -190,12 +196,36 @@ main() {
     # Confirm uninstallation
     echo ""
     print_warning "This will completely remove Adzanid from your system"
-    read -p "Are you sure you want to continue? (y/N): " -n 1 -r
-    echo ""
     
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        print_info "Uninstallation cancelled"
-        exit 0
+    # Check if we can read from terminal or if --yes flag was used
+    if [ "$SKIP_CONFIRMATION" = true ]; then
+        print_info "Skipping confirmation (--yes flag provided)"
+    elif [ -t 0 ]; then
+        # Terminal is available for input
+        read -p "Are you sure you want to continue? (y/N): " -n 1 -r
+        echo ""
+        
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_info "Uninstallation cancelled"
+            exit 0
+        fi
+    else
+        # Running from pipe (e.g., curl | bash), can't read input
+        print_error "Cannot confirm uninstallation when running from pipe"
+        echo ""
+        print_info "Please use one of these methods:"
+        echo ""
+        print_info "1. Download and run with --yes flag:"
+        print_info "   curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/uninstall.sh -o uninstall.sh"
+        print_info "   sudo bash uninstall.sh --yes"
+        echo ""
+        print_info "2. Pipe with --yes flag:"
+        print_info "   curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/uninstall.sh | sudo bash -s -- --yes"
+        echo ""
+        print_info "3. Clone repository and run interactively:"
+        print_info "   git clone https://github.com/fikrisyahid/adzanid.git"
+        print_info "   cd adzanid && chmod +x uninstall.sh && sudo ./uninstall.sh"
+        exit 1
     fi
     
     echo ""
