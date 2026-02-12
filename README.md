@@ -95,9 +95,43 @@ The application features three main tabs with light and dark theme support:
 
 No Python installation required!
 
-### macOS / Linux (Run from Source)
+### macOS / Linux (Automated Installation)
 
-Since pre-built executables are only available for Windows, macOS and Linux users need to run from source:
+We provide an automated installation script that handles everything for you:
+
+> [!IMPORTANT]
+> Requires Python 3.10, 3.11, or 3.12 (not 3.13 or higher due to PyInstaller compatibility)
+
+```bash
+# Clone the repository
+git clone https://github.com/fikrisyahid/adzanid.git
+cd adzanid
+
+# Make the install script executable
+chmod +x install.sh
+
+# Run the installation script with sudo
+sudo ./install.sh
+```
+
+**What the script does:**
+- ✅ Validates Python installation and version
+- ✅ Creates virtual environment
+- ✅ Installs all dependencies
+- ✅ Builds the application with PyInstaller
+- ✅ Copies assets to the correct location
+- ✅ Installs to system directories:
+  - **Linux**: `/opt/adzanid` with desktop entry
+  - **macOS**: `/Applications/Adzanid.app`
+- ✅ Creates command-line shortcut: `adzanid`
+
+After installation:
+- **Linux**: Find Adzanid in your application menu or run `adzanid` in terminal
+- **macOS**: Find Adzanid in Applications folder or run `adzanid` in terminal
+
+#### Alternative: Run from Source (Without Installation)
+
+If you prefer to run without system installation:
 
 ```bash
 # Clone the repository
@@ -106,7 +140,7 @@ cd adzanid
 
 # Create virtual environment
 python3 -m venv venv
-source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -115,21 +149,25 @@ pip install -r requirements.txt
 python main.py
 ```
 
-#### Building Your Own Executable (macOS/Linux)
+#### Manual Build (Advanced Users)
 
-If you want to create your own executable:
-
-> [!IMPORTANT]
-> Use Python < 3.13 to avoid PyInstaller compatibility issues.
+If you want to build manually without installation:
 
 ```bash
+# Ensure Python < 3.13
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 pip install pyinstaller
-pyinstaller --name "Adzanid" --windowed --icon=assets/icon.png --add-data "assets:assets" main.py
-```
-> [!NOTE]
-> Copy the `assets` folder into the `dist/Adzanid` directory.
 
-The executable will be in the `dist/` directory.
+# Build
+pyinstaller --name "Adzanid" --windowed --icon=assets/icon.png --add-data "assets:assets" main.py
+
+# Copy assets
+cp -r assets dist/Adzanid/
+```
+
+The executable will be in the `dist/Adzanid/` directory.
 
 
 ## Usage
@@ -152,8 +190,6 @@ python main.py
 ### Testing Audio
 
 Click the "Test Suara Adzan" button in the Settings tab to preview your selected audio file.
-
-The executable will be created in the `dist/` directory.
 
 ## Project Structure
 
