@@ -12,6 +12,7 @@ from app.services.prayer_time_service import PrayerTimeService
 from app.services.audio_service import AudioService
 from app.services.theme_manager import ThemeManager
 from app.services.startup_service import StartupService
+from app.services.update_service import UpdateService
 from app.ui.schedule_tab import ScheduleTab
 from app.ui.settings_tab import SettingsTab
 from app.ui.about_tab import AboutTab
@@ -42,6 +43,7 @@ class MainWindow(QMainWindow):
         )
         self._theme_manager = ThemeManager()
         self._startup_service = StartupService()
+        self._update_service = UpdateService()
 
         # Load persisted theme preference before building UI
         self._theme_manager.is_dark = self._settings.value(
@@ -66,6 +68,9 @@ class MainWindow(QMainWindow):
 
         # Fetch initial data
         self._fetch_prayer_times()
+        
+        # Check for updates
+        self._check_for_updates()
 
     # ------------------------------------------------------------------
     # Window setup
@@ -110,8 +115,11 @@ class MainWindow(QMainWindow):
         self._settings_tab.stop_audio_requested.connect(self._on_stop_audio)
         self._settings_tab.test_notification_requested.connect(self._on_test_notification)
 
+        # Schedule tab signals
+        self._schedule_tab.stop_audio_requested.connect(self._on_stop_audio)
+
         # System tray signals
-        self._tray.show_requested.connect(self.show)
+        self._tray.show_requested.connect(self._show_window)
 
     # ------------------------------------------------------------------
     # Settings persistence
@@ -170,6 +178,15 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self._schedule_tab.set_info_text("Gagal mengambil data")
             print(e)
+
+    def _check_for_updates(self):
+        """Check for application updates from GitHub."""
+        result = self._update_service.check_for_updates()
+        if result['update_available']:
+            self._schedule_tab.show_update_notification(
+                result['latest_version'],
+                result['download_url']
+            )
 
     # ------------------------------------------------------------------
     # Clock tick & adhan trigger
@@ -234,9 +251,16 @@ class MainWindow(QMainWindow):
         self._settings_tab.btn_test_notification.setEnabled(True)
         self._settings_tab.btn_test_notification.setText("⏰ Test Notifikasi (10 detik)")
 
+    def _show_window(self):
+        """Restore and bring the window to the foreground."""
+        self.showNormal()
+        self.activateWindow()
+        self.raise_()
+
     def _update_audio_buttons(self, playing: bool):
         self._settings_tab.btn_test.setEnabled(not playing)
         self._settings_tab.btn_stop.setEnabled(playing)
+        self._schedule_tab.btn_stop_adzan.setVisible(playing)
 
     # ------------------------------------------------------------------
     # Window close → tray behaviour

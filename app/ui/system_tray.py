@@ -21,6 +21,7 @@ class SystemTrayManager(QObject):
         self._setup_menu(parent)
 
         self._tray_icon.activated.connect(self._on_activated)
+        self._tray_icon.messageClicked.connect(self.show_requested.emit)
         self._tray_icon.show()
 
     def _setup_icon(self, parent):

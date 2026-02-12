@@ -1,13 +1,17 @@
 """Schedule tab displaying current time and prayer times."""
 
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
-from PyQt6.QtCore import Qt
+import webbrowser
+
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame
+from PyQt6.QtCore import Qt, pyqtSignal
 
 from app.constants import PRAYER_NAMES
 
 
 class ScheduleTab(QWidget):
     """Tab widget that shows the clock and today's prayer schedule."""
+
+    stop_audio_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -16,6 +20,32 @@ class ScheduleTab(QWidget):
 
     def _init_ui(self):
         layout = QVBoxLayout()
+
+        # Update notification banner (hidden by default)
+        self._update_widget = QFrame()
+        self._update_widget.setStyleSheet(
+            "background-color: #3498db; border-radius: 8px; padding: 10px;"
+        )
+        self._update_widget.setVisible(False)
+        
+        update_layout = QHBoxLayout(self._update_widget)
+        update_layout.setContentsMargins(10, 10, 10, 10)
+        
+        self._lbl_update = QLabel("")
+        self._lbl_update.setStyleSheet("color: white; font-size: 14px; font-weight: bold;")
+        self._lbl_update.setWordWrap(True)
+        update_layout.addWidget(self._lbl_update, 1)
+        
+        self._btn_download_update = QPushButton("⬇ Download")
+        self._btn_download_update.setStyleSheet(
+            "background-color: #2ecc71; color: white; font-size: 14px; "
+            "font-weight: bold; padding: 8px 16px; border-radius: 5px;"
+        )
+        self._btn_download_update.clicked.connect(self._on_download_update)
+        update_layout.addWidget(self._btn_download_update)
+        
+        layout.addWidget(self._update_widget)
+        layout.addSpacing(10)
 
         # Large clock header
         self.lbl_current_time = QLabel("00:00:00")
@@ -44,6 +74,15 @@ class ScheduleTab(QWidget):
             layout.addLayout(row)
             self._prayer_labels[name] = lbl_time
 
+        # Stop adzan button (hidden by default)
+        self.btn_stop_adzan = QPushButton("⏹ Stop Adzan")
+        self.btn_stop_adzan.setStyleSheet(
+            "font-size: 16px; padding: 10px; background-color: #c0392b; color: white; border-radius: 6px;"
+        )
+        self.btn_stop_adzan.setVisible(False)
+        self.btn_stop_adzan.clicked.connect(self.stop_audio_requested.emit)
+        layout.addWidget(self.btn_stop_adzan)
+
         layout.addStretch()
         self.setLayout(layout)
 
@@ -59,3 +98,18 @@ class ScheduleTab(QWidget):
         """Update the displayed time for a specific prayer."""
         if prayer_name in self._prayer_labels:
             self._prayer_labels[prayer_name].setText(time_str)
+
+    def show_update_notification(self, latest_version: str, download_url: str):
+        """Show the update notification banner."""
+        self._lbl_update.setText(f"🎉 Update tersedia: v{latest_version}")
+        self._download_url = download_url
+        self._update_widget.setVisible(True)
+
+    def hide_update_notification(self):
+        """Hide the update notification banner."""
+        self._update_widget.setVisible(False)
+
+    def _on_download_update(self):
+        """Open the download URL in the default browser."""
+        if hasattr(self, '_download_url'):
+            webbrowser.open(self._download_url)
