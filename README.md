@@ -23,10 +23,56 @@ A simple, elegant desktop application built with Python and PyQt6 that displays 
 
 ## Screenshots
 
-The application features three main tabs:
-- **Jadwal** - Displays current time and today's prayer schedule
-- **Pengaturan** - Configure city, audio file, theme, and startup options
-- **Tentang** - Application information and credits
+The application features three main tabs with light and dark theme support:
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="assets/schedule_white.png" alt="Schedule Tab - Light Theme" width="200"/>
+      <br/>
+      <strong>Jadwal (Light)</strong>
+      <br/>
+      Prayer schedule display
+    </td>
+    <td align="center">
+      <img src="assets/setting_white.png" alt="Settings Tab - Light Theme" width="200"/>
+      <br/>
+      <strong>Pengaturan (Light)</strong>
+      <br/>
+      Configuration options
+    </td>
+    <td align="center">
+      <img src="assets/about_white.png" alt="About Tab - Light Theme" width="200"/>
+      <br/>
+      <strong>Tentang (Light)</strong>
+      <br/>
+      App information
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/schedule_black.png" alt="Schedule Tab - Dark Theme" width="200"/>
+      <br/>
+      <strong>Jadwal (Dark)</strong>
+      <br/>
+      Prayer schedule display
+    </td>
+    <td align="center">
+      <img src="assets/setting_black.png" alt="Settings Tab - Dark Theme" width="200"/>
+      <br/>
+      <strong>Pengaturan (Dark)</strong>
+      <br/>
+      Configuration options
+    </td>
+    <td align="center">
+      <img src="assets/about_black.png" alt="About Tab - Dark Theme" width="200"/>
+      <br/>
+      <strong>Tentang (Dark)</strong>
+      <br/>
+      App information
+    </td>
+  </tr>
+</table>
 
 ## Requirements
 
