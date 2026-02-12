@@ -1,4 +1,4 @@
-# Jadwal Sholat Indonesia
+# Adzanid - Jadwal Sholat Indonesia
 
 <p align="center">
   <img src="assets/icon.png" alt="App Icon" width="128"/>
