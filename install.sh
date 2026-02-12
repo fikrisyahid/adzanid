@@ -79,19 +79,49 @@ check_python() {
     print_info "Checking for Python installation..."
     
     # Prioritize conda/virtual environment Python if active
-    if [ -n "$CONDA_DEFAULT_ENV" ] || [ -n "$VIRTUAL_ENV" ] || [ -n "$CONDA_PREFIX" ]; then
-        ENV_NAME="${CONDA_DEFAULT_ENV:-${VIRTUAL_ENV:-$CONDA_PREFIX}}"
-        print_info "Detected active Python environment: $ENV_NAME"
+    if [ -n "$CONDA_PREFIX" ]; then
+        # Conda environment detected - use direct path
+        ENV_NAME="${CONDA_DEFAULT_ENV:-$CONDA_PREFIX}"
+        print_info "Detected active conda environment: $ENV_NAME"
         
-        # Check 'python' command first (common in conda envs)
+        # Use conda prefix to find python directly (PATH might not be preserved under sudo)
+        if [ -x "$CONDA_PREFIX/bin/python" ]; then
+            PYTHON_CMD="$CONDA_PREFIX/bin/python"
+        elif [ -x "$CONDA_PREFIX/bin/python3" ]; then
+            PYTHON_CMD="$CONDA_PREFIX/bin/python3"
+        else
+            print_error "Python executable not found in conda environment"
+            print_info "Conda prefix: $CONDA_PREFIX"
+            print_info "Expected location: $CONDA_PREFIX/bin/python"
+            exit 1
+        fi
+    elif [ -n "$VIRTUAL_ENV" ]; then
+        # Virtual environment detected - use direct path
+        print_info "Detected active virtual environment: $VIRTUAL_ENV"
+        
+        # Use virtualenv path to find python directly
+        if [ -x "$VIRTUAL_ENV/bin/python" ]; then
+            PYTHON_CMD="$VIRTUAL_ENV/bin/python"
+        elif [ -x "$VIRTUAL_ENV/bin/python3" ]; then
+            PYTHON_CMD="$VIRTUAL_ENV/bin/python3"
+        else
+            print_error "Python executable not found in virtual environment"
+            print_info "Virtual env path: $VIRTUAL_ENV"
+            exit 1
+        fi
+    elif [ -n "$CONDA_DEFAULT_ENV" ]; then
+        # CONDA_DEFAULT_ENV is set but CONDA_PREFIX is not - try command -v
+        print_info "Detected CONDA_DEFAULT_ENV but CONDA_PREFIX not set: $CONDA_DEFAULT_ENV"
+        print_warning "This might indicate an incomplete conda activation"
+        
+        # Fallback to checking PATH
         if command -v python &> /dev/null; then
             PYTHON_CMD="python"
         elif command -v python3 &> /dev/null; then
             PYTHON_CMD="python3"
         else
-            print_error "Python is not found in the current environment"
-            print_info "Current environment: $ENV_NAME"
-            print_info "This might happen if conda environment is not properly activated"
+            print_error "Python is not found in PATH"
+            print_info "Try running: sudo -E ./install.sh"
             exit 1
         fi
     else
