@@ -196,36 +196,32 @@ main() {
     # Confirm uninstallation
     echo ""
     print_warning "This will completely remove Adzanid from your system"
+    echo ""
     
-    # Check if we can read from terminal or if --yes flag was used
+    # Check if --yes flag was used
     if [ "$SKIP_CONFIRMATION" = true ]; then
-        print_info "Skipping confirmation (--yes flag provided)"
-    elif [ -t 0 ]; then
-        # Terminal is available for input
-        read -p "Are you sure you want to continue? (y/N): " -n 1 -r
-        echo ""
-        
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            print_info "Uninstallation cancelled"
-            exit 0
-        fi
+        print_info "Proceeding with uninstallation (--yes flag provided)"
     else
-        # Running from pipe (e.g., curl | bash), can't read input
-        print_error "Cannot confirm uninstallation when running from pipe"
-        echo ""
-        print_info "Please use one of these methods:"
-        echo ""
-        print_info "1. Download and run with --yes flag:"
-        print_info "   curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/uninstall.sh -o uninstall.sh"
-        print_info "   sudo bash uninstall.sh --yes"
-        echo ""
-        print_info "2. Pipe with --yes flag:"
-        print_info "   curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/uninstall.sh | sudo bash -s -- --yes"
-        echo ""
-        print_info "3. Clone repository and run interactively:"
-        print_info "   git clone https://github.com/fikrisyahid/adzanid.git"
-        print_info "   cd adzanid && chmod +x uninstall.sh && sudo ./uninstall.sh"
-        exit 1
+        # Try to read from /dev/tty if available, otherwise require --yes
+        if [ -c /dev/tty ]; then
+            read -p "Are you sure you want to continue? (y/N): " -n 1 -r < /dev/tty
+            echo ""
+            
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                print_info "Uninstallation cancelled"
+                exit 0
+            fi
+        else
+            print_error "Cannot prompt for confirmation (no terminal available)"
+            echo ""
+            print_info "When piping from curl/wget, use the --yes flag:"
+            print_info "  curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/uninstall.sh | sudo bash -s -- --yes"
+            echo ""
+            print_info "Or download and run locally:"
+            print_info "  curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/uninstall.sh -o uninstall.sh"
+            print_info "  sudo bash uninstall.sh"
+            exit 1
+        fi
     fi
     
     echo ""
