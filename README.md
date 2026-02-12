@@ -200,12 +200,12 @@ Simply delete the extracted `Adzanid` folder. If you enabled "Run at Startup", t
 Uninstall Adzanid with a single command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/uninstall.sh | sudo bash -s -- --yes
+curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/uninstall.sh | sudo bash
 ```
 
 **Or using wget:**
 ```bash
-wget -qO- https://raw.githubusercontent.com/fikrisyahid/adzanid/main/uninstall.sh | sudo bash -s -- --yes
+wget -qO- https://raw.githubusercontent.com/fikrisyahid/adzanid/main/uninstall.sh | sudo bash
 ```
 
 **Or from cloned repository:**
