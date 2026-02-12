@@ -95,12 +95,40 @@ The application features three main tabs with light and dark theme support:
 
 No Python installation required!
 
-### macOS / Linux (Automated Installation)
+### macOS / Linux (Quick Installation)
 
-We provide an automated installation script that handles everything for you:
+Install Adzanid with a single command:
 
 > [!IMPORTANT]
 > Requires Python 3.10, 3.11, or 3.12 (not 3.13 or higher due to PyInstaller compatibility)
+
+**Using curl:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/fikrisyahid/adzanid/main/quick-install.sh | sudo bash
+```
+
+**Or using wget:**
+```bash
+wget -qO- https://raw.githubusercontent.com/fikrisyahid/adzanid/main/quick-install.sh | sudo bash
+```
+
+**What the installation does:**
+- ✅ Validates Python installation and version
+- ✅ Automatically installs system dependencies (python3-venv)
+- ✅ Builds the application with all dependencies
+- ✅ Installs to system directories:
+  - **Linux**: `/opt/adzanid` with desktop entry
+  - **macOS**: `/Applications/Adzanid.app`
+- ✅ Creates command-line shortcut: `adzanid`
+- ✅ Cleans up temporary files after installation
+
+**After installation:**
+- **Linux**: Find Adzanid in your application menu or run `adzanid` in terminal
+- **macOS**: Find Adzanid in Applications folder or run `adzanid` in terminal
+
+#### Alternative: Manual Installation
+
+If you prefer to install manually from the cloned repository:
 
 ```bash
 # Clone the repository
@@ -113,21 +141,6 @@ chmod +x install.sh
 # Run the installation script with sudo
 sudo ./install.sh
 ```
-
-**What the script does:**
-- ✅ Validates Python installation and version
-- ✅ Creates virtual environment
-- ✅ Installs all dependencies
-- ✅ Builds the application with PyInstaller
-- ✅ Copies assets to the correct location
-- ✅ Installs to system directories:
-  - **Linux**: `/opt/adzanid` with desktop entry
-  - **macOS**: `/Applications/Adzanid.app`
-- ✅ Creates command-line shortcut: `adzanid`
-
-After installation:
-- **Linux**: Find Adzanid in your application menu or run `adzanid` in terminal
-- **macOS**: Find Adzanid in Applications folder or run `adzanid` in terminal
 
 #### Alternative: Run from Source (Without Installation)
 

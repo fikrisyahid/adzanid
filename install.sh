@@ -5,6 +5,12 @@
 
 set -e  # Exit on any error
 
+# Check for silent mode flag
+SILENT_MODE=false
+if [ "$1" = "--silent" ]; then
+    SILENT_MODE=true
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -457,12 +463,14 @@ EOF
 
 # Main installation process
 main() {
-    echo ""
-    echo "╔═══════════════════════════════════════════════════════╗"
-    echo "║        Adzanid Installation Script v1.0               ║"
-    echo "║    Prayer Times Application for Indonesian Cities     ║"
-    echo "╚═══════════════════════════════════════════════════════╝"
-    echo ""
+    if [ "$SILENT_MODE" = false ]; then
+        echo ""
+        echo "╔═══════════════════════════════════════════════════════╗"
+        echo "║        Adzanid Installation Script v1.0               ║"
+        echo "║    Prayer Times Application for Indonesian Cities     ║"
+        echo "╚═══════════════════════════════════════════════════════╝"
+        echo ""
+    fi
     
     # Detect OS
     detect_os
@@ -509,14 +517,16 @@ main() {
         install_macos
     fi
     
-    echo ""
-    echo "╔═══════════════════════════════════════════════════════╗"
-    echo "║              Installation Complete! 🎉                ║"
-    echo "╚═══════════════════════════════════════════════════════╝"
-    echo ""
-    print_info "Thank you for installing Adzanid!"
-    print_info "Made with ❤️ for the Muslim community in Indonesia"
-    echo ""
+    if [ "$SILENT_MODE" = false ]; then
+        echo ""
+        echo "╔═══════════════════════════════════════════════════════╗"
+        echo "║              Installation Complete! 🎉                ║"
+        echo "╚═══════════════════════════════════════════════════════╝"
+        echo ""
+        print_info "Thank you for installing Adzanid!"
+        print_info "Made with ❤️ for the Muslim community in Indonesia"
+        echo ""
+    fi
 }
 
 # Check if script is being run from the correct directory
