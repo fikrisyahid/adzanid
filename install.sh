@@ -89,16 +89,129 @@ validate_python_version() {
     print_success "Python version is compatible: $PYTHON_VERSION"
 }
 
+# Check and install python3-venv if needed (Linux only)
+check_and_install_venv() {
+    if [ "$OS" != "linux" ]; then
+        return 0
+    fi
+    
+    print_info "Checking for python3-venv package..."
+    
+    # Try to import venv module
+    if $PYTHON_CMD -c "import venv" 2>/dev/null; then
+        print_success "python3-venv is already installed"
+        return 0
+    fi
+    
+    print_warning "python3-venv is not installed"
+    
+    # Check if running as root
+    if [ "$EUID" -ne 0 ]; then
+        print_error "python3-venv is required but not installed"
+        print_info "Please run this script with sudo, or manually install:"
+        print_info "  sudo apt install python3-venv    (Debian/Ubuntu)"
+        print_info "  sudo dnf install python3-venv    (Fedora/RHEL)"
+        print_info "  sudo pacman -S python            (Arch Linux)"
+        exit 1
+    fi
+    
+    # Detect package manager and install
+    print_info "Attempting to install python3-venv automatically..."
+    
+    if command -v apt-get &> /dev/null; then
+        # Debian/Ubuntu
+        print_info "Detected apt package manager (Debian/Ubuntu)"
+        VENV_PACKAGE="python${PYTHON_VERSION}-venv"
+        print_info "Installing $VENV_PACKAGE..."
+        apt-get update -qq > /dev/null 2>&1
+        apt-get install -y "$VENV_PACKAGE" > /dev/null 2>&1 || {
+            print_error "Failed to install $VENV_PACKAGE"
+            print_info "Run manually: sudo apt-get install $VENV_PACKAGE"
+            exit 1
+        }
+        print_success "Successfully installed $VENV_PACKAGE"
+        
+    elif command -v dnf &> /dev/null; then
+        # Fedora/RHEL
+        print_info "Detected dnf package manager (Fedora/RHEL)"
+        print_info "Installing python3-venv..."
+        dnf install -y python3-venv -q > /dev/null 2>&1 || {
+            print_error "Failed to install python3-venv"
+            print_info "Run manually: sudo dnf install python3-venv"
+            exit 1
+        }
+        print_success "Successfully installed python3-venv"
+        
+    elif command -v yum &> /dev/null; then
+        # Older RHEL/CentOS
+        print_info "Detected yum package manager (RHEL/CentOS)"
+        print_info "Installing python3-venv..."
+        yum install -y python3-venv -q > /dev/null 2>&1 || {
+            print_error "Failed to install python3-venv"
+            print_info "Run manually: sudo yum install python3-venv"
+            exit 1
+        }
+        print_success "Successfully installed python3-venv"
+        
+    elif command -v pacman &> /dev/null; then
+        # Arch Linux
+        print_info "Detected pacman package manager (Arch Linux)"
+        print_info "Installing python..."
+        pacman -S --noconfirm python > /dev/null 2>&1 || {
+            print_error "Failed to install python"
+            print_info "Run manually: sudo pacman -S python"
+            exit 1
+        }
+        print_success "Successfully installed python (includes venv)"
+        
+    elif command -v zypper &> /dev/null; then
+        # openSUSE
+        print_info "Detected zypper package manager (openSUSE)"
+        print_info "Installing python3-venv..."
+        zypper install -y python3-venv > /dev/null 2>&1 || {
+            print_error "Failed to install python3-venv"
+            print_info "Run manually: sudo zypper install python3-venv"
+            exit 1
+        }
+        print_success "Successfully installed python3-venv"
+        
+    else
+        print_error "Could not detect package manager"
+        print_info "Please manually install python3-venv for your distribution"
+        exit 1
+    fi
+    
+    # Verify installation
+    if $PYTHON_CMD -c "import venv" 2>/dev/null; then
+        print_success "python3-venv is now available"
+    else
+        print_error "Failed to install python3-venv"
+        exit 1
+    fi
+}
+
 # Create virtual environment
 create_venv() {
     print_info "Creating virtual environment..."
     
     if [ -d "venv" ]; then
         print_warning "Virtual environment already exists, removing old one..."
-        rm -rf venv
+        rm -rf venv || {
+            print_error "Failed to remove old virtual environment"
+            print_info "Please manually delete the 'venv' folder and try again"
+            exit 1
+        }
     fi
     
-    $PYTHON_CMD -m venv venv
+    $PYTHON_CMD -m venv venv || {
+        print_error "Failed to create virtual environment"
+        print_info "This usually means python3-venv is not properly installed"
+        if [ "$OS" == "linux" ]; then
+            print_info "Try manually running: sudo apt install python${PYTHON_VERSION}-venv"
+        fi
+        exit 1
+    }
+    
     print_success "Virtual environment created"
 }
 
@@ -110,29 +223,74 @@ install_dependencies() {
     source venv/bin/activate
     
     # Upgrade pip
-    pip install --upgrade pip
+    print_info "Upgrading pip..."
+    pip install --upgrade pip -q > /dev/null 2>&1
     
     # Install requirements
-    pip install -r requirements.txt
+    print_info "Installing Python packages (this may take a moment)..."
+    pip install -r requirements.txt -q > /dev/null 2>&1 || {
+        print_error "Failed to install dependencies from requirements.txt"
+        print_info "Check requirements.txt for issues"
+        exit 1
+    }
     
     # Install PyInstaller
-    pip install pyinstaller
+    print_info "Installing PyInstaller..."
+    pip install pyinstaller -q > /dev/null 2>&1 || {
+        print_error "Failed to install PyInstaller"
+        exit 1
+    }
     
     print_success "Dependencies installed"
 }
 
+# Clean build directories
+clean_build_dirs() {
+    print_info "Cleaning previous build artifacts..."
+    
+    # Remove dist folder if it exists
+    if [ -d "dist" ]; then
+        print_info "Removing dist/ folder..."
+        rm -rf dist
+    fi
+    
+    # Remove build folder if it exists
+    if [ -d "build" ]; then
+        print_info "Removing build/ folder..."
+        rm -rf build
+    fi
+    
+    # Remove spec file if it exists
+    if [ -f "Adzanid.spec" ]; then
+        print_info "Removing old spec file..."
+        rm -f Adzanid.spec
+    fi
+    
+    print_success "Build directories cleaned"
+}
+
 # Build the application with PyInstaller
 build_app() {
-    print_info "Building application with PyInstaller..."
+    print_info "Building application with PyInstaller (this may take a few minutes)..."
     
     # Ensure we're in the virtual environment
     source venv/bin/activate
     
     # Build the application
     if [ "$OS" == "macos" ]; then
-        pyinstaller --name "Adzanid" --windowed --icon=assets/icon.png --add-data "assets:assets" main.py
+        pyinstaller --name "Adzanid" --windowed --icon=assets/icon.png --add-data "assets:assets" main.py > /dev/null 2>&1 || {
+            print_error "PyInstaller build failed"
+            print_info "Re-run without redirection to see detailed errors:"
+            print_info "  pyinstaller --name Adzanid --windowed --icon=assets/icon.png --add-data assets:assets main.py"
+            exit 1
+        }
     else
-        pyinstaller --name "Adzanid" --windowed --icon=assets/icon.png --add-data "assets:assets" main.py
+        pyinstaller --name "Adzanid" --windowed --icon=assets/icon.png --add-data "assets:assets" main.py > /dev/null 2>&1 || {
+            print_error "PyInstaller build failed"
+            print_info "Re-run without redirection to see detailed errors:"
+            print_info "  pyinstaller --name Adzanid --windowed --icon=assets/icon.png --add-data assets:assets main.py"
+            exit 1
+        }
     fi
     
     print_success "Application built successfully"
@@ -164,7 +322,7 @@ install_linux() {
     
     # Check if running as root for installation
     if [ "$EUID" -ne 0 ]; then
-        print_error "This installation requires root privileges"
+        print_error "System installation requires root privileges"
         print_info "Please run: sudo ./install.sh"
         exit 1
     fi
@@ -209,7 +367,8 @@ EOF
     
     # Update desktop database
     if command -v update-desktop-database &> /dev/null; then
-        update-desktop-database /usr/share/applications
+        print_info "Updating desktop database..."
+        update-desktop-database /usr/share/applications > /dev/null 2>&1
     fi
     
     print_success "Adzanid installed successfully!"
@@ -222,7 +381,7 @@ install_macos() {
     
     # Check if running as root for installation
     if [ "$EUID" -ne 0 ]; then
-        print_error "This installation requires root privileges"
+        print_error "System installation requires root privileges"
         print_info "Please run: sudo ./install.sh"
         exit 1
     fi
@@ -308,14 +467,29 @@ main() {
     # Detect OS
     detect_os
     
+    # Check for root privileges early
+    if [ "$EUID" -ne 0 ]; then
+        print_warning "This script should be run with sudo for full installation"
+        print_info "Running: sudo ./install.sh"
+        print_info "This ensures:"
+        print_info "  - Automatic installation of system dependencies (python3-venv)"
+        print_info "  - Proper system-wide installation to /opt or /Applications"
+        print_info "  - Creation of desktop entries and command-line shortcuts"
+        echo ""
+        print_error "Please run: sudo ./install.sh"
+        exit 1
+    fi
+    
     # Check Python
     check_python
     validate_python_version
+    check_and_install_venv
     
     # Build application
     print_info "Starting build process..."
     create_venv
     install_dependencies
+    clean_build_dirs
     build_app
     copy_assets
     
