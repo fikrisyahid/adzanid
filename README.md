@@ -73,6 +73,9 @@ python main.py
 
 If you want to create your own executable:
 
+> [!IMPORTANT]
+> Use Python < 3.13 to avoid PyInstaller compatibility issues.
+
 ```bash
 pip install pyinstaller
 pyinstaller --name "Adzanid" --windowed --icon=assets/icon.png --add-data "assets:assets" main.py
