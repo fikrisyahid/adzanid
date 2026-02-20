@@ -13,6 +13,7 @@ from app.services.audio_service import AudioService
 from app.services.theme_manager import ThemeManager
 from app.services.startup_service import StartupService
 from app.services.update_service import UpdateService
+from app.services.dnd_service import is_dnd_enabled
 from app.ui.schedule_tab import ScheduleTab
 from app.ui.settings_tab import SettingsTab
 from app.ui.about_tab import AboutTab
@@ -34,6 +35,7 @@ class MainWindow(QMainWindow):
         self._settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
         self._prayer_times: dict[str, str] = {}
         self._last_triggered_time: str | None = None
+        self._current_date: str | None = None  # Track date to detect day change
 
         # --- Services ---
         self._prayer_service = PrayerTimeService()
@@ -114,6 +116,8 @@ class MainWindow(QMainWindow):
         self._settings_tab.test_audio_requested.connect(self._on_test_audio)
         self._settings_tab.stop_audio_requested.connect(self._on_stop_audio)
         self._settings_tab.test_notification_requested.connect(self._on_test_notification)
+        self._settings_tab.volume_changed.connect(self._on_volume_changed)
+        self._settings_tab.mute_toggled.connect(self._on_mute_toggled)
 
         # Schedule tab signals
         self._schedule_tab.stop_audio_requested.connect(self._on_stop_audio)
@@ -142,6 +146,15 @@ class MainWindow(QMainWindow):
         is_startup = self._settings.value("startup", False, type=bool)
         self._settings_tab.chk_startup.setChecked(is_startup)
 
+        # Volume & mute
+        saved_volume = self._settings.value("volume", 100, type=int)
+        self._settings_tab.slider_volume.setValue(saved_volume)
+        self._audio_service.volume = saved_volume / 100.0
+
+        is_muted = self._settings.value("muted", False, type=bool)
+        self._settings_tab.chk_mute.setChecked(is_muted)
+        self._audio_service.muted = is_muted
+
     def _on_mp3_path_changed(self, path: str):
         self._settings.setValue("mp3_path", path)
 
@@ -159,6 +172,14 @@ class MainWindow(QMainWindow):
             self._startup_service.set_startup(enabled)
         except Exception as e:
             QMessageBox.warning(self, "Error Registry", str(e))
+
+    def _on_volume_changed(self, volume: float):
+        self._audio_service.volume = volume
+        self._settings.setValue("volume", int(volume * 100))
+
+    def _on_mute_toggled(self, muted: bool):
+        self._audio_service.muted = muted
+        self._settings.setValue("muted", muted)
 
     # ------------------------------------------------------------------
     # Prayer time fetching
@@ -196,6 +217,15 @@ class MainWindow(QMainWindow):
         now = datetime.datetime.now()
         self._schedule_tab.update_clock(now.strftime("%H:%M:%S"))
 
+        # Detect day change and re-fetch prayer times
+        today = now.strftime("%d-%m-%Y")
+        if self._current_date is not None and self._current_date != today:
+            self._current_date = today
+            self._last_triggered_time = None
+            self._fetch_prayer_times()
+            return
+        self._current_date = today
+
         current_short = now.strftime("%H:%M")
         if self._last_triggered_time == current_short:
             return
@@ -210,6 +240,9 @@ class MainWindow(QMainWindow):
             "Waktu Sholat Tiba",
             f"Saatnya sholat {prayer_name}",
         )
+        # Skip audio if system Do Not Disturb / Focus Assist is active
+        if is_dnd_enabled():
+            return
         self._play_adhan()
 
     def _play_adhan(self):
