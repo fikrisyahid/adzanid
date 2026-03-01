@@ -271,6 +271,76 @@ check_and_install_venv() {
     fi
 }
 
+# Check and install binutils (objdump) if needed (Linux only, required by PyInstaller)
+check_and_install_binutils() {
+    if [ "$OS" != "linux" ]; then
+        return 0
+    fi
+    
+    print_info "Checking for binutils (objdump, required by PyInstaller)..."
+    
+    if command -v objdump &> /dev/null; then
+        print_success "binutils (objdump) is already installed"
+        return 0
+    fi
+    
+    print_warning "binutils is not installed (required by PyInstaller on Linux)"
+    
+    if [ "$EUID" -ne 0 ]; then
+        print_error "binutils is required but not installed"
+        print_info "Please install it manually:"
+        print_info "  sudo apt install binutils    (Debian/Ubuntu)"
+        print_info "  sudo dnf install binutils    (Fedora/RHEL)"
+        print_info "  sudo pacman -S binutils      (Arch Linux)"
+        exit 1
+    fi
+    
+    print_info "Attempting to install binutils automatically..."
+    
+    if command -v apt-get &> /dev/null; then
+        print_info "Installing binutils via apt..."
+        apt-get install -y binutils -q > /dev/null 2>&1 || {
+            print_error "Failed to install binutils"
+            print_info "Run manually: sudo apt-get install binutils"
+            exit 1
+        }
+    elif command -v dnf &> /dev/null; then
+        print_info "Installing binutils via dnf..."
+        dnf install -y binutils -q > /dev/null 2>&1 || {
+            print_error "Failed to install binutils"
+            print_info "Run manually: sudo dnf install binutils"
+            exit 1
+        }
+    elif command -v yum &> /dev/null; then
+        print_info "Installing binutils via yum..."
+        yum install -y binutils -q > /dev/null 2>&1 || {
+            print_error "Failed to install binutils"
+            print_info "Run manually: sudo yum install binutils"
+            exit 1
+        }
+    elif command -v pacman &> /dev/null; then
+        print_info "Installing binutils via pacman..."
+        pacman -S --noconfirm binutils > /dev/null 2>&1 || {
+            print_error "Failed to install binutils"
+            print_info "Run manually: sudo pacman -S binutils"
+            exit 1
+        }
+    elif command -v zypper &> /dev/null; then
+        print_info "Installing binutils via zypper..."
+        zypper install -y binutils > /dev/null 2>&1 || {
+            print_error "Failed to install binutils"
+            print_info "Run manually: sudo zypper install binutils"
+            exit 1
+        }
+    else
+        print_error "Could not detect package manager to install binutils"
+        print_info "Please manually install binutils for your distribution"
+        exit 1
+    fi
+    
+    print_success "binutils installed successfully"
+}
+
 # Create virtual environment
 create_venv() {
     print_info "Creating virtual environment..."
@@ -397,6 +467,31 @@ copy_assets() {
     print_success "Assets copied to dist/Adzanid/"
 }
 
+# Restore ownership of build artifacts to the original user (avoids root-owned files in project dir)
+fix_build_ownership() {
+    if [ -z "$SUDO_USER" ]; then
+        return 0
+    fi
+    
+    local sudo_group
+    sudo_group=$(id -gn "$SUDO_USER" 2>/dev/null || echo "$SUDO_USER")
+    
+    print_info "Restoring build artifact ownership to $SUDO_USER:$sudo_group..."
+    
+    for item in venv dist build Adzanid.spec; do
+        if [ -e "$item" ]; then
+            chown -R "$SUDO_USER:$sudo_group" "$item" 2>/dev/null || \
+                print_warning "Could not restore ownership of $item"
+        fi
+    done
+    
+    # Also fix any __pycache__ dirs created outside venv
+    find . -maxdepth 4 -name "__pycache__" -not -path "./venv/*" \
+        -exec chown -R "$SUDO_USER:$sudo_group" {} \; 2>/dev/null || true
+    
+    print_success "Build artifact ownership restored to $SUDO_USER"
+}
+
 # Install for Linux
 install_linux() {
     print_info "Installing Adzanid for Linux..."
@@ -422,11 +517,17 @@ install_linux() {
     mkdir -p "$INSTALL_DIR"
     cp -r dist/Adzanid/* "$INSTALL_DIR/"
     
-    # Make executable
+    # Set permissions: directories 755, files 644, executables 755
+    find "$INSTALL_DIR" -type d -exec chmod 755 {} \;
+    find "$INSTALL_DIR" -type f -exec chmod 644 {} \;
+    # Make the main binary and any bundled .so/.dylib files executable
     chmod +x "$INSTALL_DIR/Adzanid"
+    find "$INSTALL_DIR" -type f \( -name "*.so" -o -name "*.so.*" -o -name "python*" \) \
+        -exec chmod 755 {} \;
     
     # Create wrapper script in /usr/local/bin (instead of symlink to fix asset paths)
     print_info "Creating launcher script in /usr/local/bin..."
+    mkdir -p /usr/local/bin
     cat > /usr/local/bin/adzanid << 'EOF'
 #!/bin/bash
 # Adzanid launcher wrapper
@@ -438,6 +539,7 @@ EOF
     
     # Create desktop entry
     print_info "Creating desktop entry..."
+    mkdir -p /usr/share/applications
     cat > /usr/share/applications/adzanid.desktop << EOF
 [Desktop Entry]
 Version=1.1
@@ -584,6 +686,7 @@ main() {
     check_python
     validate_python_version
     check_and_install_venv
+    check_and_install_binutils
     
     # Build application
     print_info "Starting build process..."
@@ -592,6 +695,9 @@ main() {
     clean_build_dirs
     build_app
     copy_assets
+    
+    # Restore ownership of build artifacts to the original user
+    fix_build_ownership
     
     # Deactivate virtual environment
     deactivate 2>/dev/null || true
