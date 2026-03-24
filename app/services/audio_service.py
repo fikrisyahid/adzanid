@@ -8,7 +8,7 @@ from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
 
 class AudioService(QObject):
     """Wraps QMediaPlayer to handle adhan audio playback."""
-
+ 
     playback_finished = pyqtSignal()
 
     def __init__(self, parent=None):
