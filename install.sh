@@ -546,6 +546,7 @@ Version=1.1
 Type=Application
 Name=Adzanid
 Comment=Desktop prayer times application for Indonesian cities
+Path=/opt/adzanid
 Exec=/opt/adzanid/Adzanid
 Icon=/opt/adzanid/assets/icon.png
 Terminal=false
